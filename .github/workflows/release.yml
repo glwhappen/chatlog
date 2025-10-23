@@ -5,25 +5,20 @@ on:
     tags:
       - 'v*'
 
-env:
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   release:
-    name: Release Binary and Docker
+    name: Release Binary
     runs-on: ubuntu-latest
     container:
       image: goreleaser/goreleaser-cross:v1.24
     permissions:
-      contents: write
-      packages: write
-      id-token: write
+      contents: write  # 仅需这个权限用于创建Release和上传二进制文件
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # 确保能获取完整的Git历史，用于版本信息生成
       
       - name: Fix git permissions
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -31,28 +26,9 @@ jobs:
       - name: Install UPX
         uses: crazy-max/ghaction-upx@v3
         with:
-          install-only: true
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          install-only: true  # 用于压缩二进制文件（可选，根据你的goreleaser配置决定）
 
       - name: Run GoReleaser
         run: goreleaser release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 仅需这个内置令牌
